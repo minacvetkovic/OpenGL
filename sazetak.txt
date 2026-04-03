@@ -1,0 +1,236 @@
+================================================================================
+SAŽETAK SVIH IZMENA OD INICIJALNOG COMMIT-A
+Ocean Explorer - Igrica na OpenGL-u
+================================================================================
+
+## 📋 NOVE SCENE (Kompletan gameplay sistem)
+
+1. **MenuScene.h** - Glavna meni scena sa:
+   - Play dugme → izbor nivoa
+   - Credits dugme
+   - Exit dugme
+   - Dinamička pozadina (mainmenu.png / LevelMenu.png)
+   - Responsivni UI koji se prilagođava veličini prozora
+   - Mogućnost vraćanja iz izbora nivoa na glavni meni
+
+2. **GameScene.h** - Glavna igra sa:
+   - Dinamička pozadina (različita za level 1 i 2)
+   - Igrač (riba) sa kontrolama (A/D za horizontalno, W/S za vertikalno)
+   - Sistem za prikupljanje predmeta (dobri/loši itemi)
+   - Score sistem (+50 za dobre, -50 za loše)
+   - Pause mehanika (toggle sa pause dugmom)
+   - Dve težine nivoa sa različitim šansama za loše iteme
+   - Automatski prelaz na PassedTheLevel ili GameOver na osnovu score-a
+
+3. **EndGameScene.h** - Game Over ekran sa:
+   - Prikazivanje finalnog score-a
+   - Replay dugme (vraća na isti nivo)
+   - Exit dugme (vraća u meni)
+   - Prilagođena pozadina na veličinu prozora
+
+4. **PassedTheLevelScene.h** - Level Complete ekran sa:
+   - Prikazuje se kada igrač skupi 100 poena na Level 1
+   - Level2 dugme (vodi na teži nivo)
+   - Exit dugme (vraća u meni)
+   - LevelMenu.png pozadina
+
+5. **OptionsScene.h** - Options/Credits meni sa:
+   - Responsivnom pozadinom
+   - Exit dugmom
+   - Dinamičkim pozicioniranjem UI elemenata
+
+6. **SplashScene.h** - Splash/Loading ekran
+
+================================================================================
+
+## 🎮 MEHANIKA IGRE
+
+### Scoring sistem:
+- +50 poena za dobre iteme (oil.png, battery.png)
+- -50 poena za loše iteme (water.png, rock.png)
+
+### Uslovi za zavrtšetak:
+- Level 1 pobjedu: ≥ 100 poena → PassedTheLevel
+- Poraz (bilo koji level): ≤ -100 poena → GameOver
+- Nema vremenskog ograničenja
+
+### Dva nivoa težine:
+- Level 1: 60% šanse za loše iteme (više loših, lakše za igrače)
+- Level 2: 45% šanse za loše iteme (više dobrih, teže je izgubiti)
+
+### Kontrole igre:
+- A - kretanje levo
+- D - kretanje desno
+- W - plivanje gore
+- S - plivanje dole
+- Pause dugme - pauziranje igre
+- Exit dugme - povratak u meni
+
+================================================================================
+
+## 🎨 UI/UX IZMJENE
+
+- Sve scene skaliraju pozadinu na celu veličinu prozora
+- Svi dugmići se dinamički centriraju
+- Text se pozicionira relativno na veličinu prozora
+- Responsive design - sve se prilagođava kada korisnik promeni veličinu prozora
+- Dinamičko postavljanje dugmića sa prilagođavanjem rastojanja
+- Score se prikazuje na vrhu ekrana, centriran
+
+================================================================================
+
+## 🚀 MOBILNOST IGRAČA
+
+- Horizontalno kretanje: A (levo), D (desno) - 70 px/s
+- Vertikalno kretanje: W (gore), S (dole) - 380 px/s
+- Igrač se može kretati po celog ekrana ali ne može izići van granica
+- Pozadina se pomera sa igračem (parallax efekat)
+
+================================================================================
+
+## 🎁 PREDMETI/PICKUPS
+
+### Tipovi predmeta:
+- Dobri: oil.png, battery.png (+50 poena)
+- Loši: water.png, rock.png (-50 poena)
+
+### Svojstva:
+- Spawn-uju se nasumično po mapi (od 25% do 75% visine ekrana)
+- Brže se stvaraju (2x brže nego u originalnom kodu)
+- Različita šansa za pojavljivanje po nivou
+- Maksimalno 5 aktivnih predmeta na sceni
+- Izbegavaju se od igrača (safe zone)
+
+================================================================================
+
+## 📁 NOVE DATOTEKE
+
+- PassedTheLevelScene.h - Kompletna nova scena za level complete
+- Transform2D.h - Struktura za transformacije
+- UIButton.h - Struktura za UI dugmiće
+- Nove sprite datoteke:
+  * Level1.png, Level2.png - Dugmići za izbor nivoa
+  * LevelMenu.png - Pozadina za izbor nivoa
+  * Background2.png - Alternativna pozadina za level 2
+  * PassedTheLevel.png - Pozadina za level complete ekran
+
+================================================================================
+
+## 🎯 KONSTANTE KOJE SU PROMENJENE
+
+U Constants.h:
+- PLAYER_SPEED = 70.0f (povećano za brže kretanje)
+- BACKGROUND_SPEED = 50.0f (brzina pozadine)
+- PICKUPS_SPAWN_INTERVAL = 4.0f (osnovna brzina spawn-a)
+- PICKUP_VALUE = 50 (poeni po predmetu)
+- PLAYER_UPPER_POSITION i PLAYER_LOWER_POSITION (granice kretanja)
+- PICKUP_UPPER_POSITION i PICKUP_LOWER_POSITION (granice spawn-a)
+- SPAWN_MARGIN = 40.0f (sigurna zona od igrača)
+- PlayerOffsets sa boljim collision box koordinatama
+- LEVEL_THRESHOLD = 40.0f (vremensko ograničenje - UKLONJENO IZ IGRE)
+
+================================================================================
+
+## 🔊 ZVUKOVI
+
+- Button click zvuk pri klikngivanju dugmadi
+- Jump zvuk pri plivanju gore/dole
+- Good pickup zvuk pri prikupljanju dobrih predmeta
+- Bad pickup zvuk pri prikupljanju loših predmeta
+
+================================================================================
+
+## 📊 SCENA PRELAZI (Flow Chart)
+
+┌─────────┐
+│ Splash  │
+└────┬────┘
+     │
+     ▼
+┌─────────────────┐
+│ Menu (Ocean     │
+│ Explorer)       │
+└────┬───────┬────┘
+     │       │
+  Play    Credits/Exit
+     │
+     ▼
+┌──────────────────┐
+│ Choose Level     │
+│ (Level 1 / 2)    │
+└────┬────────┬────┘
+     │        │
+Level1      Level2
+     │        │
+     ▼        ▼
+┌──────────────────┐
+│ GameScene        │
+│ (Gameplay)       │
+└────┬────────┬────┘
+     │        │
+≥100pts   ≤-100pts
+     │        │
+     ▼        ▼
+┌─────────────┐  ┌──────────────┐
+│PassedLevel  │  │ Game Over    │
+│ Level2/Exit │  │ Replay/Exit  │
+└─────────────┘  └──────┬───────┘
+                        │
+                    Menu/Replay
+
+================================================================================
+
+## 🔄 SCENE ID ENUMERATION
+
+enum class SceneId {
+    game,               // Level 1
+    game_level2,        // Level 2
+    passed_the_level,   // Level Complete
+    menu,               // Main Menu
+    game_over,          // Game Over
+    credits,            // Options/Credits
+    spash               // Splash
+};
+
+================================================================================
+
+## 📈 GLAVNE IZMENE U MAIN KODU
+
+Source.cpp:
+- Registracija svih scena sa odgovarajućim težinama
+- Level 1: 60% šanse za loše predmete
+- Level 2: 45% šanse za loše predmete
+- Inicijalizacija SoundManager-a i Input sistema
+
+GameScene.h:
+- Dodato tri glavna condition-a:
+  * Score ≤ -100 → game_over()
+  * Score ≥ 100 na Level 1 → level_passed()
+  * Pause mehanika
+- Dinamičko generisanje pozadine po nivou
+- Responsivno pozicioniranje svih UI elemenata
+
+MenuScene.h:
+- Dinamička zamena pozadine (mainmenu ↔ LevelMenu)
+- Izbor nivoa sa side-by-side dugmićima
+- Mogućnost vraćanja iz izbora nivoa
+
+================================================================================
+
+## 🎓 NAPOMENE ZA RAZVOJ
+
+1. Svi UI elementi se pozicioniraju relativno na veličinu prozora
+2. Sve pozadine se skaliraju da popune ekran
+3. Collision box igrača je kalibrisan za optimalno poklapanje sa sprite-om
+4. Spawn algoritam izbegava da generiše predmete blizu igrača
+5. Pause je implementiran sa toggle mehanikom (klik = toggle)
+6. Score se čuva između scena i prikazuje na game over ekranu
+7. Svaka scena ima `fit_background_to_window()` i `layout_ui()` metode
+
+================================================================================
+
+Verzija: 1.0
+Kreirano: 2024
+Projekat: Ocean Explorer - Edukativna igrica na OpenGL-u
+Jezik: C++
+Framework: OpenGL / GLUT
