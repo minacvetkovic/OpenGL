@@ -4,7 +4,7 @@
 namespace GameConstants {
 	constexpr float PICKUPS_SPAWN_INTERVAL = 4.0f;
 	constexpr int PICKUP_VALUE = 50;
-	constexpr float PLAYER_SPEED = 40.0f;
+	constexpr float PLAYER_SPEED = 70.0f;
 	constexpr float BACKGROUND_SPEED = 50.0f;
 	constexpr float PLAYER_UPPER_POSITION = 80.0f;
 	constexpr float PLAYER_LOWER_POSITION = -10.0f;

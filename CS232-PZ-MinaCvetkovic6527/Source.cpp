@@ -3,9 +3,10 @@
 #include "GameScene.h"
 #include "EndGameScene.h"
 #include "MenuScene.h"
-#include "CreditsScene.h"
+#include "OptionsScene.h"
 #include "SplashScene.h"
 #include "Sprite.h"
+#include "PassedTheLevelScene.h"
 #include <vector>
 #include <string>
 
@@ -18,9 +19,11 @@ Scene* current_scene;
 void initialize() {
 	scenes.emplace(SceneId::spash, SceneEntry{ std::make_unique<SplashScene>(), true });
 	scenes.emplace(SceneId::menu, SceneEntry{ std::make_unique<MenuScene>(), false });
-	scenes.emplace(SceneId::game, SceneEntry{ std::make_unique<GameScene>(), false });
-	scenes.emplace(SceneId::credits, SceneEntry{ std::make_unique<CreditsScene>(), false });
-	scenes.emplace(SceneId::game_over, SceneEntry{ std::make_unique<EndGameScene>(0), false });
+	scenes.emplace(SceneId::game, SceneEntry{ std::make_unique<GameScene>(0.60f, SceneId::game), false });
+	scenes.emplace(SceneId::game_level2, SceneEntry{ std::make_unique<GameScene>(0.45f, SceneId::game_level2), false });
+	scenes.emplace(SceneId::passed_the_level, SceneEntry{ std::make_unique<PassedTheLevelScene>(), false });
+	scenes.emplace(SceneId::credits, SceneEntry{ std::make_unique<OptionsScene>(), false });
+	scenes.emplace(SceneId::game_over, SceneEntry{ std::make_unique<EndGameScene>(0, SceneId::game), false });
 
 	for (auto& [id, entry] : scenes) {
 		if (entry.active && entry.ptr) {

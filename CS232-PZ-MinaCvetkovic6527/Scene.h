@@ -66,7 +66,7 @@ public:
 	}
 };
 
-enum class SceneId { game, menu, game_over, credits, spash };
+enum class SceneId { game, game_level2, passed_the_level, menu, game_over, credits, spash };
 
 struct SceneEntry {
 	std::unique_ptr<Scene> ptr;

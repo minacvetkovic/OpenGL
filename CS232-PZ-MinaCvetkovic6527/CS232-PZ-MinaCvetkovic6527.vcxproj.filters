@@ -65,7 +65,7 @@
     <ClInclude Include="UIButton.h">
       <Filter>Header Files\Objects</Filter>
     </ClInclude>
-    <ClInclude Include="CreditsScene.h">
+    <ClInclude Include="OptionsScene.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
     <ClInclude Include="EndGameScene.h">
@@ -76,6 +76,9 @@
     </ClInclude>
     <ClInclude Include="SplashScene.h">
       <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="PassedTheLevelScene.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

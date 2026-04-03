@@ -1,45 +1,31 @@
 #pragma once
 #include "Scene.h"
 
-class EndGameScene : public Scene {
+class OptionsScene : public Scene {
 private:
-	UIButton replay_button;
 	UIButton exit_button;
-
-	int score = 0;
-	SceneId replay_scene = SceneId::game;
 
 	std::unique_ptr<GameObject> background;
 public:
-	explicit EndGameScene(int new_score, SceneId new_replay_scene = SceneId::game)
-		: score(new_score), replay_scene(new_replay_scene) {
+	explicit OptionsScene() {
 		initialize();
 	}
 
 	void update(float delta_time) override {
 		fit_background_to_window();
-		layout_ui_under_title();
+		layout_ui();
 
 		if (is_button_clicked(exit_button.box))
 			switch_scene(SceneId::menu);
-
-		if (is_button_clicked(replay_button.box))
-			switch_scene(replay_scene);
 	}
 
 	void render() override {
-		fit_background_to_window();
 		background->render();
-
 		exit_button.button->render();
-		replay_button.button->render();
 
 		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
 		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
-		std::string text = "Score: " + std::to_string(score);
-		draw_text(text.c_str(), window_w * 0.42f, window_h * 0.44f, glm::vec3(0.0f));
 	}
-
 private:
 	void initialize() override {
 		background = std::make_unique<GameObject>(
@@ -47,42 +33,17 @@ private:
 			glm::vec2(0.f, 0.f),
 			0.f,
 			glm::vec2(1.f),
-			glm::vec2(1.f));
+			glm::vec2(0.f));
 
 		background->set_renderer(
 			std::make_unique<SpriteRenderer>(
-				"Sprites/gameover.png",
+				"Sprites/options.png",
 				1,
 				false));
-
-		fit_background_to_window();
-
-		auto replay_obj = std::make_unique<GameObject>(
-			"replay_button",
-			glm::vec2(390.f, 260.f),
-			0.f,
-			glm::vec2(1.f),
-			glm::vec2(0.f));
-
-		replay_obj->set_renderer(
-			std::make_unique<SpriteRenderer>(
-				"Sprites/restartButton.png",
-				1,
-				false));
-
-		AABB replay_box = make_aabb(
-			replay_obj.get(),
-			false,
-			/*offsets*/{ 0,0,0,0 });
-
-		replay_button = {
-			/*button*/ std::move(replay_obj),
-			/*box*/ replay_box,
-			/*active*/ true };
 
 		auto exit_obj = std::make_unique<GameObject>(
 			"exit_button",
-			glm::vec2(390.f, 180.f),
+			glm::vec2(390.f, 200.f),
 			0.f,
 			glm::vec2(1.f),
 			glm::vec2(0.f));
@@ -103,12 +64,11 @@ private:
 			/*box*/ exit_box,
 			/*active*/ true };
 
-		layout_ui_under_title();
+		fit_background_to_window();
+		layout_ui();
 	}
 
 	void fit_background_to_window() {
-		if (!background) return;
-
 		auto* renderer = dynamic_cast<SpriteRenderer*>(background->get_renderer());
 		if (!renderer) return;
 
@@ -125,22 +85,16 @@ private:
 			window_h / static_cast<float>(texture_h));
 	}
 
-	void place_button(UIButton& button, float y) {
-		auto* renderer = dynamic_cast<SpriteRenderer*>(button.button->get_renderer());
+	void layout_ui() {
+		auto* renderer = dynamic_cast<SpriteRenderer*>(exit_button.button->get_renderer());
 		if (!renderer) return;
 
-		const float button_width = renderer->get_texture_width() * button.button->transform.scale.x;
 		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-
-		button.button->transform.position.x = (window_w - button_width) * 0.5f;
-		button.button->transform.position.y = y;
-		button.box = make_aabb(button.button.get(), false, /*offsets*/{ 0,0,0,0 });
-	}
-
-	void layout_ui_under_title() {
 		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float button_w = renderer->get_texture_width() * exit_button.button->transform.scale.x;
 
-		place_button(replay_button, window_h * 0.32f);
-		place_button(exit_button, window_h * 0.22f);
+		exit_button.button->transform.position.x = (window_w - button_w) * 0.5f;
+		exit_button.button->transform.position.y = window_h * 0.20f;
+		exit_button.box = make_aabb(exit_button.button.get(), false, /*offsets*/{ 0,0,0,0 });
 	}
 };

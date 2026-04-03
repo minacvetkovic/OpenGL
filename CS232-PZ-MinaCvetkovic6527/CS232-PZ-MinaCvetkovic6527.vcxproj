@@ -108,10 +108,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Linking\SOIL\include;$(SolutionDir)Linking\GLM\include;$(SolutionDir)Linking\GLUT\include;$(SolutionDir)Linking\FMOD\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Linking\FMOD\lib;$(SolutionDir)Linking\SOIL\lib;$(SolutionDir)Linking\GLUT\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>fmodL_vc.lib;soil2.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,13 +138,14 @@
   <ItemGroup>
     <ClInclude Include="CollisionUtils.h" />
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="CreditsScene.h" />
+    <ClInclude Include="OptionsScene.h" />
     <ClInclude Include="EndGameScene.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="IRenderable.h" />
     <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="PassedTheLevelScene.h" />
     <ClInclude Include="Primitive.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SoundManager.h" />
