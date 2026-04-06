@@ -145,11 +145,12 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="IRenderable.h" />
     <ClInclude Include="MenuScene.h" />
+    <ClInclude Include="PassedTheGameScene.h" />
     <ClInclude Include="PassedTheLevelScene.h" />
+    <ClInclude Include="PassedTheScene.h" />
     <ClInclude Include="Primitive.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SoundManager.h" />
-    <ClInclude Include="SplashScene.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="Transform2D.h" />
     <ClInclude Include="UIButton.h" />

@@ -4,6 +4,7 @@
 #include <string>
 #include "EndGameScene.h"
 #include "PassedTheLevelScene.h"
+#include "PassedTheGameScene.h"
 
 class GameScene : public Scene {
 
@@ -16,11 +17,10 @@ private:
 	int score = 0;
 	float pickup_timer = 0.0f;
 	float level_timer = 0.0f;
-	bool is_paused = false;
 	float bad_pickup_chance = 0.5f;
 	SceneId this_scene_id = SceneId::game;
+	bool shark_hit = false;
 
-	UIButton pause_button;
 	UIButton exit_button;
 public:
 	explicit GameScene(float bad_spawn_chance = 0.5f, SceneId scene_id = SceneId::game)
@@ -32,6 +32,7 @@ public:
 
 		fit_background_to_window();
 		layout_top_buttons();
+		shark_hit = false;
 
 		if (is_button_clicked(exit_button.box)) {
 			switch_scene(SceneId::menu);
@@ -39,44 +40,56 @@ public:
 			return;
 		}
 
-		check_pause();
+		check_background();
+		move_player(delta_time);
+		check_edges_for_player();
 
-		if (!is_paused) {
-
-			check_background();
-			move_player(delta_time);
-			check_edges_for_player();
-
-			background->update(delta_time);
-			player->update(delta_time);
-
-			if (should_generate_pickups()) {
-				pickup_timer += delta_time;
-				const float fast_spawn_interval = GameConstants::PICKUPS_SPAWN_INTERVAL * 0.5f;
-				if (pickup_timer >= fast_spawn_interval) {
-					generate_pickup();
-					pickup_timer = 0.0f;
+		level_timer += delta_time;
+		if (level_timer >= GameConstants::LEVEL_THRESHOLD) {
+			if (score >= 300) {
+				if (this_scene_id == SceneId::game) {
+					level_passed();
+				}
+				else if (this_scene_id == SceneId::game_level2) {
+					game_passed();
 				}
 			}
+			else {
+				game_over();
+			}
+			return;
+		}
 
-			for (auto it = pickups.begin(); it != pickups.end();) {
-				if (check_for_collision(it->get()))
+		background->update(delta_time);
+		player->update(delta_time);
+
+		if (should_generate_pickups()) {
+			pickup_timer += delta_time;
+			const float fast_spawn_interval = GameConstants::PICKUPS_SPAWN_INTERVAL * 0.5f;
+			if (pickup_timer >= fast_spawn_interval) {
+				generate_pickup();
+				pickup_timer = 0.0f;
+			}
+		}
+
+		for (auto it = pickups.begin(); it != pickups.end();) {
+			if (check_for_collision(it->get())) {
+				it = pickups.erase(it);
+			}
+			else {
+				(*it)->update(delta_time);
+				if (is_pickup_out_of_screen(it->get())) {
 					it = pickups.erase(it);
+				}
 				else {
-					(*it)->update(delta_time);
 					++it;
 				}
 			}
+		}
 
-			if (score <= -100) {
-				game_over();
-				return;
-			}
-
-			if (this_scene_id == SceneId::game && score >= 100) {
-				level_passed();
-				return;
-			}
+		if (shark_hit || score <= -100) {
+			game_over();
+			return;
 		}
 	}
 
@@ -89,21 +102,38 @@ public:
 
 		player->render();
 
-		pause_button.button->render();
 		exit_button.button->render();
 
 		const std::string score_text = "Score: " + std::to_string(score);
-		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float screen_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float screen_height = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 
 		float text_w = 0.0f;
 		for (char c : score_text) {
 			text_w += glutStrokeWidth(GLUT_STROKE_ROMAN, c) * 0.2f;
 		}
 
-		const float score_x = (window_w - text_w) * 0.5f;
-		const float score_y = window_h - 40.0f;
+		const float score_x = (screen_width - text_w) * 0.5f;
+		const float score_y = screen_height - 40.0f;
 		draw_text(score_text.c_str(), score_x, score_y);
+
+		float remaining_time = GameConstants::LEVEL_THRESHOLD - level_timer;
+		if (remaining_time < 0.0f) remaining_time = 0.0f;
+
+		int time_left = static_cast<int>(remaining_time);
+		if (remaining_time > static_cast<float>(time_left)) {
+			++time_left;
+		}
+
+		const std::string timer_text = "Time: " + std::to_string(time_left);
+		float timer_w = 0.0f;
+		for (char c : timer_text) {
+			timer_w += glutStrokeWidth(GLUT_STROKE_ROMAN, c) * 0.2f;
+		}
+
+		const float timer_x = screen_width - timer_w - 20.0f;
+		const float timer_y = screen_height - 40.0f;
+		draw_text(timer_text.c_str(), timer_x, timer_y);
 	}
 
 private:
@@ -140,30 +170,6 @@ private:
 				/*use_transparency*/ true)
 		);
 
-		auto pause_obj = std::make_unique<GameObject>(
-			"pause_button",
-			glm::vec2(50.f, 550.f),
-			0.f,
-			glm::vec2(1.f),
-			glm::vec2(0.f)
-		);
-
-		pause_obj->set_renderer(std::make_unique<SpriteRenderer>(
-			"Sprites/pauseButton.png",
-			1,
-			false));
-
-		AABB pause_box = make_aabb(
-			pause_obj.get(),
-			false,
-			/*offsets*/{ 0,0,0,0 });
-
-		pause_button = {
-			/*button*/ std::move(pause_obj),
-			/*box*/ pause_box,
-			/*active*/ true
-		};
-
 		auto exit_obj = std::make_unique<GameObject>(
 			"exit_button",
 			glm::vec2(150.f, 550.f),
@@ -194,19 +200,13 @@ private:
 		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 		const float top_margin = 10.0f;
 		const float left_margin = 20.0f;
-		const float spacing = 12.0f;
 
-		auto* pause_renderer = dynamic_cast<SpriteRenderer*>(pause_button.button->get_renderer());
 		auto* exit_renderer = dynamic_cast<SpriteRenderer*>(exit_button.button->get_renderer());
-		if (!pause_renderer || !exit_renderer) return;
+		if (!exit_renderer) return;
 
-		const float pause_h = pause_renderer->get_texture_height() * pause_button.button->transform.scale.y;
-		const float pause_w = pause_renderer->get_texture_width() * pause_button.button->transform.scale.x;
+		const float exit_h = exit_renderer->get_texture_height() * exit_button.button->transform.scale.y;
 
-		pause_button.button->transform.position = glm::vec2(left_margin, window_h - pause_h - top_margin);
-		exit_button.button->transform.position = glm::vec2(left_margin + pause_w + spacing, window_h - pause_h - top_margin);
-
-		pause_button.box = make_aabb(pause_button.button.get(), false, /*offsets*/{ 0,0,0,0 });
+		exit_button.button->transform.position = glm::vec2(left_margin, window_h - exit_h - top_margin);
 		exit_button.box = make_aabb(exit_button.button.get(), false, /*offsets*/{ 0,0,0,0 });
 	}
 
@@ -218,12 +218,12 @@ private:
 		const int texture_h = renderer->get_texture_height();
 		if (texture_w <= 0 || texture_h <= 0) return;
 
-		const float x = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-		const float y = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float screen_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float screen_height = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 
-		const float min_world_width = x * 1.8f;
+		const float min_world_width = screen_width * 1.8f;
 		const float scale_w = min_world_width / static_cast<float>(texture_w);
-		const float scale_y = y / static_cast<float>(texture_h);
+		const float scale_y = screen_height / static_cast<float>(texture_h);
 		const float fill_scale = (scale_w > scale_y) ? scale_w : scale_y;
 
 		background->transform.scale = glm::vec2(fill_scale);
@@ -245,10 +245,16 @@ private:
 	}
 
 	AABB get_player_bounding_box() {
-		return make_aabb(player.get(), true, get_player_offset());
+		const AABB base = make_aabb(player.get(), true, get_player_offset());
+		return expand_aabb(base, -30.0f);
 	}
 
 	AABB get_pickup_bounding_box(GameObject* pickup) {
+		const bool is_shark = (std::strcmp(pickup->get_name(), "shark") == 0);
+		if (is_shark) {
+			const AABB base = make_aabb(pickup, false, PickupOffsets::DEFAULT);
+			return expand_aabb(base, -50.0f);
+		}
 		return make_aabb(pickup, false, PickupOffsets::DEFAULT);
 	}
 
@@ -285,7 +291,7 @@ private:
 		}
 	}
 
-	void check_edges_for_player() {
+void check_edges_for_player() {
 		auto* player_renderer = get_player_renderer();
 		if (!player_renderer) return;
 
@@ -340,12 +346,7 @@ private:
 		player->transform.position.y = glm::clamp(player->transform.position.y, min_y, max_y);
 
 		if ((Input::get_key_down('W') || Input::get_key_down('S')) && player->transform.position.y != old_y) {
-			SoundManager::get_instance().audio_manager->playSound(
-				SoundManager::get_instance().jump_sound,
-				nullptr,
-				false,
-				&SoundManager::get_instance().environment_sounds
-			);
+			SoundManager::get_instance().play_jump();
 		}
 
 		if (Input::get_key_down('A')) {
@@ -374,7 +375,7 @@ private:
 		return true;
 	}
 
-	float get_random_pickup_y_position(float pickup_height) {
+	float random_pickup_y(float pickup_height) {
 		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 
 		const float top_ui_reserved = 120.0f;
@@ -387,35 +388,95 @@ private:
 		return min_y + static_cast<float>(std::rand() % (max_range + 1));
 	}
 
-	const char* get_bad_pickup_texture() {
-		static const char* bad_textures[] = {
-			"Sprites/water.png",
-			"Sprites/rock.png"
-		};
-		return bad_textures[std::rand() % 2];
+	float random_left_y(float pickup_height) {
+		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float min_y = GameConstants::PLAYER_LOWER_POSITION;
+		const float max_y = glm::max(min_y, window_h - pickup_height);
+
+		const int max_range = static_cast<int>(max_y - min_y);
+		if (max_range <= 0) return min_y;
+
+		return min_y + static_cast<float>(std::rand() % (max_range + 1));
 	}
 
-	const char* get_good_pickup_texture() {
+	float random_right_y(float pickup_height) {
+		return random_left_y(pickup_height);
+	}
+
+	const char* get_bad_pickup_texture(bool& shark_spawn, bool& can_spawn) {
+		if (this_scene_id == SceneId::game_level2) {
+			const int pick = std::rand() % 3;
+			shark_spawn = (pick == 1);
+			can_spawn = (pick == 2);
+			static const char* bad_textures[] = {
+				"Sprites/piranha.png",
+				"Sprites/shark.png",
+				"Sprites/can.png"
+			};
+			return bad_textures[pick];
+		}
+
+		shark_spawn = (std::rand() % 2) == 1;
+		can_spawn = false;
+		return shark_spawn ? "Sprites/shark.png" : "Sprites/piranha.png";
+	}
+
+	const char* get_good_pickup_texture(bool& nemo_spawn) {
 		static const char* good_textures[] = {
-			"Sprites/oil.png",
-			"Sprites/battery.png"
+			"Sprites/pearl.png",
+			"Sprites/cancer.png",
+			"Sprites/nemo.png"
 		};
+
+		if (this_scene_id == SceneId::game_level2) {
+			const int pick = std::rand() % 3;
+			nemo_spawn = (pick == 2);
+			return good_textures[pick];
+		}
+
+		nemo_spawn = false;
 		return good_textures[std::rand() % 2];
+	}
+
+	bool spawn_side(
+		std::unique_ptr<GameObject>& pickup,
+		bool should_spawn,
+		bool from_left,
+		float pickup_height,
+		float pickup_width
+	) {
+		if (!should_spawn) return false;
+
+		const float y = from_left ? random_left_y(pickup_height) : random_right_y(pickup_height);
+		const float x = from_left
+			? -pickup_width - 20.0f
+			: static_cast<float>(glutGet(GLUT_WINDOW_WIDTH)) + 20.0f;
+		const float speed = from_left ? 220.0f : -220.0f;
+
+		pickup->transform.position = glm::vec2(x, y);
+		pickup->transform.velocity = glm::vec2(speed, 0.0f);
+		pickups.push_back(std::move(pickup));
+		return true;
 	}
 
 	void generate_pickup() {
 		const float r = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
 		const bool is_bad = (r < bad_pickup_chance);
+		bool shark_flag = false;
+		bool can_flag = false;
+		bool nemo_flag = false;
+		const char* texture_file = is_bad ? get_bad_pickup_texture(shark_flag, can_flag) : get_good_pickup_texture(nemo_flag);
+		const bool piranha_flag = is_bad && !shark_flag && !can_flag;
 
 		auto pickup = std::make_unique<GameObject>(
-			is_bad ? "bad pickup" : "good pickup",
+			shark_flag ? "shark" : (piranha_flag ? "piranha" : (is_bad ? "bad pickup" : "good pickup")),
 			glm::vec2(0.0f, 0.0f),
 			0.0f,
 			glm::vec2(1.0f),
 			glm::vec2(0.0f)
 		);
 		pickup->set_renderer(
-			std::make_unique<SpriteRenderer>(is_bad ? get_bad_pickup_texture() : get_good_pickup_texture(), 1, true)
+			std::make_unique<SpriteRenderer>(texture_file, 1, true)
 		);
 
 		auto* pickup_renderer = dynamic_cast<SpriteRenderer*>(pickup->get_renderer());
@@ -423,9 +484,13 @@ private:
 			? pickup_renderer->get_texture_height() * pickup->transform.scale.y
 			: 0.0f;
 
-		const float window_width = glutGet(GLUT_WINDOW_WIDTH);
 		const AABB temp_bb = get_pickup_bounding_box(pickup.get());
 		const float pickup_width = temp_bb.max_x - temp_bb.min_x;
+
+		if (spawn_side(pickup, shark_flag, true, pickup_height, pickup_width)) return;
+		if (spawn_side(pickup, piranha_flag || nemo_flag, false, pickup_height, pickup_width)) return;
+
+		const float window_width = glutGet(GLUT_WINDOW_WIDTH);
 		const float right_limit = std::max(0.0f, window_width - pickup_width);
 
 		const AABB player_bb = get_player_bounding_box();
@@ -433,7 +498,7 @@ private:
 
 		bool placed = false;
 		for (int i = 0; i < GameConstants::MAX_SPAWN_ATTEMPTS; ++i) {
-			const float y = get_random_pickup_y_position(pickup_height);
+			const float y = random_pickup_y(pickup_height);
 			const float x = static_cast<float>(std::rand() % (static_cast<int>(right_limit) + 1));
 
 			if (is_position_valid(glm::vec2(x, y), pickup.get(), safe_zone)) {
@@ -444,11 +509,24 @@ private:
 
 		if (!placed) {
 			const float x_fallback = glm::clamp(safe_zone.max_x + 10.0f, 0.0f, right_limit);
-			const float y_fallback = get_random_pickup_y_position(pickup_height);
+			const float y_fallback = random_pickup_y(pickup_height);
 			pickup->transform.position = { x_fallback, y_fallback };
 		}
 
 		pickups.push_back(std::move(pickup));
+	}
+
+	bool is_pickup_out_of_screen(GameObject* pickup) {
+		auto* renderer = dynamic_cast<SpriteRenderer*>(pickup->get_renderer());
+		if (!renderer) return false;
+
+		const float window_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float pickup_width = renderer->get_texture_width() * pickup->transform.scale.x;
+
+		const bool off_right = pickup->transform.position.x > (window_width + pickup_width);
+		const bool off_left = pickup->transform.position.x < -pickup_width;
+
+		return off_right || off_left;
 	}
 
 	bool check_for_collision(GameObject* pickup) {
@@ -456,29 +534,20 @@ private:
 		const AABB pickup_aabb = get_pickup_bounding_box(pickup);
 
 		if (intersects(player_aabb, pickup_aabb)) {
-			const bool is_bad = (std::strcmp(pickup->get_name(), "bad pickup") == 0);
+			const bool is_shark = (std::strcmp(pickup->get_name(), "shark") == 0);
+			if (is_shark) {
+				shark_hit = true;
+				return true;
+			}
+
+			const bool is_bad = (std::strcmp(pickup->get_name(), "bad pickup") == 0)
+				|| (std::strcmp(pickup->get_name(), "piranha") == 0);
 			score += is_bad ? -GameConstants::PICKUP_VALUE : GameConstants::PICKUP_VALUE;
-			SoundManager::get_instance().audio_manager->playSound(
-				is_bad ? SoundManager::get_instance().bad_pickup_sound : SoundManager::get_instance().good_pickup_sound,
-				nullptr,
-				false,
-				&SoundManager::get_instance().environment_sounds
-			);
+			SoundManager::get_instance().play_pickup(is_bad);
 			return true;
 		}
 
 		return false;
-	}
-
-	void check_pause() {
-		if (is_button_clicked(/*pause button*/ pause_button.box)) {
-			is_paused = !is_paused;
-
-			std::string file_name = (is_paused) ? "Sprites/resumeButton.png" : "Sprites/pauseButton.png";
-			pause_button.button->set_renderer(
-				std::make_unique<SpriteRenderer>(/*file_name*/ file_name.c_str(), /*number_of_frames*/ 1, /*use_transparency*/ false)
-			);
-		}
 	}
 
 	void restart_game() {
@@ -492,6 +561,8 @@ private:
 	}
 
 	void game_over() {
+		SoundManager::get_instance().play_game_over();
+
 		auto it = scenes.find(SceneId::game_over);
 		if (it != scenes.end()) {
 			it->second.ptr = std::make_unique<EndGameScene>(score, this_scene_id);
@@ -503,13 +574,30 @@ private:
 	}
 
 	void level_passed() {
+		SoundManager::get_instance().play_passed_level();
+
+		level1_score = score;
+
 		auto it = scenes.find(SceneId::passed_the_level);
 		if (it != scenes.end()) {
-			it->second.ptr = std::make_unique<PassedTheLevelScene>();
+			it->second.ptr = std::make_unique<PassedTheLevelScene>(score);
 			it->second.active = false;
 		}
 
 		switch_scene(SceneId::passed_the_level);
+		restart_game();
+	}
+
+	void game_passed() {
+		SoundManager::get_instance().play_passed_level();
+
+		auto it = scenes.find(SceneId::passed_the_game);
+		if (it != scenes.end()) {
+			it->second.ptr = std::make_unique<PassedTheGameScene>(level1_score + score);
+			it->second.active = false;
+		}
+
+		switch_scene(SceneId::passed_the_game);
 		restart_game();
 	}
 };

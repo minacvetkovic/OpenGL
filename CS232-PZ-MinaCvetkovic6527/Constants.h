@@ -13,7 +13,7 @@ namespace GameConstants {
 	constexpr float SPAWN_MARGIN = 40.0f;
 	constexpr int MAX_SPAWN_ATTEMPTS = 40;
 	constexpr int MAX_ACTIVE_PICKUPS = 5;
-	constexpr float LEVEL_THRESHOLD = 40.0f;
+	constexpr float LEVEL_THRESHOLD = 60.0f;
 }
 
 namespace PlayerOffsets {

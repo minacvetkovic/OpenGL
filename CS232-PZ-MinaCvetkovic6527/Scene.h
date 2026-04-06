@@ -53,11 +53,7 @@ public:
 			float gy = float(glutGet(GLUT_WINDOW_HEIGHT)) - screen_y;
 
 			if (point_in_aabb(button, screen_x, gy)) {
-				SoundManager::get_instance().audio_manager->playSound(
-					SoundManager::get_instance().button_sound,
-					nullptr, false,
-					&SoundManager::get_instance().surrounding_sounds
-				);
+				SoundManager::get_instance().play_button();
 				return true;
 			}
 		}
@@ -66,7 +62,7 @@ public:
 	}
 };
 
-enum class SceneId { game, game_level2, passed_the_level, menu, game_over, credits, spash };
+enum class SceneId { game, game_level2, passed_the_level, passed_the_game, menu, game_over, credits };
 
 struct SceneEntry {
 	std::unique_ptr<Scene> ptr;
@@ -75,6 +71,7 @@ struct SceneEntry {
 
 extern std::unordered_map<SceneId, SceneEntry> scenes;
 extern Scene* current_scene;
+inline int level1_score = 0;
 
 inline void switch_scene(SceneId id) {
 	auto it = scenes.find(id);

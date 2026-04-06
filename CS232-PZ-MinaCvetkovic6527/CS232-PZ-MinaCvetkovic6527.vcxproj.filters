@@ -74,11 +74,14 @@
     <ClInclude Include="MenuScene.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="SplashScene.h">
+    <ClInclude Include="PassedTheGameScene.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
     <ClInclude Include="PassedTheLevelScene.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="PassedTheScene.h">
+      <Filter>Header Files\Scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -23,8 +23,8 @@ public:
 		background->render();
 		exit_button.button->render();
 
-		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float screen_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float screen_height = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 	}
 private:
 	void initialize() override {
@@ -76,25 +76,28 @@ private:
 		const int texture_h = renderer->get_texture_height();
 		if (texture_w <= 0 || texture_h <= 0) return;
 
-		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float screen_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float screen_height = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 
 		background->transform.position = glm::vec2(0.0f, 0.0f);
 		background->transform.scale = glm::vec2(
-			window_w / static_cast<float>(texture_w),
-			window_h / static_cast<float>(texture_h));
+			screen_width / static_cast<float>(texture_w),
+			screen_height / static_cast<float>(texture_h));
 	}
 
 	void layout_ui() {
 		auto* renderer = dynamic_cast<SpriteRenderer*>(exit_button.button->get_renderer());
 		if (!renderer) return;
 
-		const float window_w = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
-		const float window_h = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
+		const float screen_width = static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+		const float screen_height = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT));
 		const float button_w = renderer->get_texture_width() * exit_button.button->transform.scale.x;
+		const float button_h = renderer->get_texture_height() * exit_button.button->transform.scale.y;
+		const float right_margin = 20.0f;
+		const float bottom_margin = 20.0f;
 
-		exit_button.button->transform.position.x = (window_w - button_w) * 0.5f;
-		exit_button.button->transform.position.y = window_h * 0.20f;
+		exit_button.button->transform.position.x = screen_width - button_w - right_margin;
+		exit_button.button->transform.position.y = bottom_margin;
 		exit_button.box = make_aabb(exit_button.button.get(), false, /*offsets*/{ 0,0,0,0 });
 	}
 };
